@@ -8,7 +8,9 @@ services:
     envVars:
       - key: BOT_TOKEN
         sync: false
+      - key: SUPPORT_BOT_TOKEN
+        sync: false
       - key: SUPPORT_ADMIN_ID
         sync: false
-      - key: WEBHOOK_URL
+      - key: BASE_WEBHOOK_URL
         sync: false

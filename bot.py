@@ -1,10 +1,11 @@
-import asyncio
 import logging
 import os
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message, CallbackQuery
+from aiohttp import web
 from dotenv import load_dotenv
 
 
@@ -13,6 +14,13 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 if not TOKEN:
     raise RuntimeError("BOT_TOKEN не найден. Добавь токен в .env")
+
+WEBHOOK_PATH = "/webhook"
+PORT = int(os.getenv("PORT", "10000"))
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME")
+if not WEBHOOK_URL and render_hostname:
+    WEBHOOK_URL = f"https://{render_hostname}{WEBHOOK_PATH}"
 
 
 def main_menu() -> InlineKeyboardMarkup:
@@ -69,11 +77,45 @@ async def echo(message: Message) -> None:
     await message.answer(f"Ты написал: {message.text}")
 
 
-async def main() -> None:
-    logging.basicConfig(level=logging.INFO)
-    bot = Bot(token=TOKEN)
+def register_webhook_events() -> None:
+    if not WEBHOOK_URL:
+        raise RuntimeError(
+            "WEBHOOK_URL не задан. Для Render укажи WEBHOOK_URL вручную "
+            "или используй RENDER_EXTERNAL_HOSTNAME."
+        )
+
+    async def on_startup(bot: Bot) -> None:
+        await bot.set_webhook(WEBHOOK_URL)
+
+    async def on_shutdown(bot: Bot) -> None:
+        await bot.delete_webhook()
+
+    dp.startup.register(on_startup)
+    dp.shutdown.register(on_shutdown)
+
+
+async def run_polling(bot: Bot) -> None:
     await dp.start_polling(bot)
 
 
+def run_webhook(bot: Bot) -> None:
+    register_webhook_events()
+    app = web.Application()
+    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path=WEBHOOK_PATH)
+    setup_application(app, dp, bot=bot)
+    web.run_app(app, host="0.0.0.0", port=PORT)
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO)
+    bot = Bot(token=TOKEN)
+    if WEBHOOK_URL:
+        run_webhook(bot)
+    else:
+        import asyncio
+
+        asyncio.run(run_polling(bot))
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

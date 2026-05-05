@@ -1,6 +1,6 @@
 # TG Bot (aiogram)
 
-Простой Telegram-бот на Python, который работает только через Telegram (polling).
+Простой Telegram-бот на Python. Локально работает через polling, в Render - через webhook.
 
 ## Что умеет
 - Команды: `/start`, `/help`, `/menu`
@@ -28,9 +28,10 @@
 
 1. Создай репозиторий на GitHub и загрузи туда папку `tg-bot`.
 2. Зайди в [Render](https://render.com) -> **New** -> **Blueprint**.
-3. Подключи репозиторий: Render прочитает `render.yaml` и создаст worker.
+3. Подключи репозиторий: Render прочитает `render.yaml` и создаст web service.
 4. В переменных окружения укажи:
    - `BOT_TOKEN=твой_токен`
+   - `WEBHOOK_URL=https://<имя-сервиса>.onrender.com/webhook`
 5. Нажми deploy.
 
 После этого бот работает на серверах Render, а компьютер можно выключать.

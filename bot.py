@@ -238,6 +238,13 @@ def run_webhook() -> None:
 
     register_webhook_events()
     app = web.Application()
+    
+    async def health(_: web.Request) -> web.Response:
+        return web.Response(text="ok")
+
+    app.router.add_get("/", health)
+    app.router.add_get("/health", health)
+
     SimpleRequestHandler(dispatcher=client_dp, bot=client_bot).register(
         app, path=CLIENT_WEBHOOK_PATH
     )
